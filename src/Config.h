@@ -27,6 +27,13 @@ public:
   bool noLoadIndicator = false;
   uint8_t indicatorPercent = 30;
 
+  // Fault (no-load) detection. Evaluated on a mean of the power samples, not a
+  // single frame: an idle load's control board emits stray watt-level readings
+  // that a one-shot comparison mistakes for the load running.
+  bool faultEnabled = true;
+  float faultWatts = 0.5f;        // mean power at or below this counts as no-load
+  uint16_t faultHoldSec = 300;    // how long it must stay there before faulting
+
   // CSE7766 calibration multipliers (applied on top of datasheet scaling)
   float calVoltage = 1.0f;
   float calCurrent = 1.0f;

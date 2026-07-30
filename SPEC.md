@@ -110,11 +110,11 @@ The wizard collects only what gets the plug online and findable: wifi plus devic
 name. Everything else lives in a settings UI reached at `fl-<name>.local` after
 the plug joins the network, on these tabs:
 
-- **Status:** relay state, live power/voltage/current, wifi signal, uptime,
-  firmware version.
+- **Status:** relay state, a fault banner when the load has stopped drawing
+  power, live power/voltage/current, wifi signal, uptime, firmware version.
 - **MQTT:** broker host, port, username, password, discovery prefix.
 - **Settings:** relay restore mode, no-load indicator on/off, indicator
-  brightness.
+  brightness, fault detection on/off with its threshold and dwell.
 - **Calibration:** single-point CSE7766 calibration against a known load, with
   step-by-step directions on the page (see below).
 - **System:** OTA upload, restart, factory reset.
@@ -148,17 +148,43 @@ independent toggles. Highest active condition wins.
 |---|---|---|
 | 1 | AP setup mode | Slow blink, 1s on / 1s off, full brightness |
 | 2 | Connecting to wifi | Fast blink, ~3Hz, full brightness |
-| 3 | No-load indicator (relay on, <= 0.1W), if enabled | Solid, dimmed default |
+| 3 | No-load indicator (fault detected), if enabled | Solid, dimmed default |
 | 4 | Normal | Off |
 
 The two blink states run full brightness because they're transient and you're
 looking at the plug during setup or a connect attempt. The no-load indicator runs
-dimmed (~30% default, adjustable) because it can sit on for hours. It reuses the
-old Fault logic: relay on plus wattage <= 0.1W, with a ~12s debounce so a single
-zero reading inside the sample window doesn't flicker it. Red on plus blue on
-reads as "powered but nothing drawing"; red alone reads as "powered and working."
+dimmed (~30% default, adjustable) because it can sit on for hours. It tracks the
+fault state described in the next section. Red on plus blue on reads as "powered
+but nothing drawing"; red alone reads as "powered and working."
 
 The no-load indicator defaults off (opt-in).
+
+## Fault detection
+
+A fault means the relay is on and the load has stopped drawing power: a humidifier
+that ran dry, a heater that tripped its thermal cutout, an appliance someone
+switched off at its own button.
+
+The test runs on the mean of the power samples collected over a 5s window, never
+on the latest CSE7766 frame. Two things make a single reading useless here. An
+idle appliance's control board still emits occasional watt-level frames, measured
+at up to 1.9W on a humidifier drawing 0.03A, and one comparison against a low
+threshold reads those as the load running. Going the other way, an appliance that
+duty-cycles drops to a true 0W for seconds at a stretch while working correctly,
+so a low reading on its own proves nothing either.
+
+Defaults are 0.5W and 300s, both adjustable per device on the Settings tab because
+the right numbers depend on the load. On the two humidifiers this was tuned
+against, the idle 5-minute mean sits between 0.04W and 0.12W while the running
+5-minute mean never drops below 2.69W, which puts 0.5W roughly 5x clear of each.
+
+The dwell is deliberately asymmetric. Faulting takes the full configured hold;
+clearing takes 15s above the threshold. Slow to fault so a duty cycle can't trip
+it, quicker to clear so a load coming back gets noticed without a five-minute lag.
+Switching the relay off clears the fault at once, since an off relay isn't a
+fault.
+
+An S31 Lite has no CSE7766, so it never computes or publishes a fault at all.
 
 ## Button behavior
 

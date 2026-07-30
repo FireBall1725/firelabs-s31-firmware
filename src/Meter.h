@@ -29,6 +29,11 @@ public:
   // if no frames arrived in the window.
   bool sampleAverage(float& v, float& i, float& p);
 
+  // Mean power since the last call, on an accumulator of its own so the fault
+  // detector and the publisher can each consume a full window. Returns false if
+  // no frames arrived; an empty window must not be judged either way.
+  bool faultAverage(float& p);
+
   // Diagnostics for the /api/meter endpoint.
   uint32_t rxBytes() const { return rxBytes_; }
   uint32_t frameCount() const { return frames_; }
@@ -56,4 +61,8 @@ private:
   // accumulators for averaging
   double sumV_ = 0, sumI_ = 0, sumP_ = 0;
   uint32_t count_ = 0;
+
+  // second, independent power accumulator drained by the fault detector
+  double faultSumP_ = 0;
+  uint32_t faultCount_ = 0;
 };

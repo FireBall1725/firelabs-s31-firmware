@@ -53,6 +53,7 @@ input[type=range]{padding:0;border:0;background:none;accent-color:var(--orange)}
 .seg{display:flex;background:var(--seg);border-radius:10px;padding:4px}.seg button{flex:1;font-family:inherit;font-weight:600;font-size:12.5px;color:var(--muted);border:0;background:transparent;padding:8px;border-radius:7px;cursor:pointer}.seg button.on{background:var(--segon);color:var(--ink)}
 .mini{width:46px;height:27px;border-radius:999px;background:var(--track);position:relative;cursor:pointer;transition:.25s;flex:none}.mini::after{content:"";position:absolute;top:3px;left:3px;width:21px;height:21px;border-radius:50%;background:#fff;transition:.25s}.mini.on{background:var(--grad)}.mini.on::after{left:22px}
 .callout{background:var(--co);border:1px solid var(--cob);border-radius:12px;padding:13px 15px;font-size:13px;color:var(--cof);margin-bottom:14px}.callout b{color:var(--ink)}
+.fault{display:none;background:rgba(214,58,30,.12);border:1px solid var(--dbd);border-radius:12px;padding:13px 15px;font-size:12.5px;color:var(--danger);margin-bottom:16px}.fault.on{display:block}.fault b{display:block;font-size:14px;margin-bottom:3px}
 ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--muted)}ol b{color:var(--ink)}
 .led{width:14px;height:14px;border-radius:50%;flex:none;background:#2b6cff;box-shadow:0 0 9px rgba(43,108,255,.75)}.led.slow{animation:bl 2s steps(1) infinite}.led.fast{animation:bl .34s steps(1) infinite}.led.dim{opacity:.32}.led.o{background:var(--ledoff);box-shadow:none}@keyframes bl{50%{opacity:.12}}
 .foot{text-align:center;color:var(--muted);opacity:.7;font-size:11.5px;margin-top:26px}
@@ -66,6 +67,7 @@ ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--mute
 <button onclick="tb(this,'set')">Settings</button><button id="caltab" onclick="tb(this,'cal')">Calibration</button><button onclick="tb(this,'sys')">System</button></div>
 
 <div class="tab on" id="status">
+<div class="fault" id="flt"><b>No load</b>The relay is on but nothing is drawing power. Check the appliance; it may be off, empty, or unplugged.</div>
 <div class="card"><div class="relay" id="relay" onclick="toggleRelay()"><div class="glyph">&#9211;</div>
 <div class="meta"><div class="st" id="rst">Relay</div><div class="lbl">Tap to toggle · red LED tracks this</div></div><div class="sw"></div></div>
 <div class="stats" id="stats"><div class="stat"><div class="v" id="p">--<span>W</span></div><div class="k">Power</div></div>
@@ -99,6 +101,11 @@ ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--mute
 <div class="row" id="nlrow" style="margin-top:16px"><div class="grow"><div class="k">No-load indicator</div><div class="s">Blue LED glows when the relay is on but nothing draws power</div></div><div class="mini" id="nl" onclick="this.classList.toggle('on')"></div></div>
 <label style="margin-top:16px">Indicator brightness<input id="ib" type="range" min="5" max="100" value="30" oninput="bv.textContent=this.value+'%'"></label>
 <div class="help"><span id="bv">30%</span></div>
+<button class="btn p blk" style="margin-top:18px" onclick="saveSet()">Save settings</button></div></div>
+<div class="card" id="ftcard"><div class="hd">Fault detection</div><div class="csub">Flags a load that has stopped drawing power while switched on: a humidifier out of water, an appliance that tripped.</div><div class="bd">
+<div class="row" style="padding-top:0"><div class="grow"><div class="k">Enabled</div><div class="s">Reports the fault here and to Home Assistant</div></div><div class="mini" id="fte" onclick="this.classList.toggle('on')"></div></div>
+<div style="display:flex;gap:12px;margin-top:14px"><label style="flex:1;margin-top:0">Trip below (W)<input id="ftw" type="number" step="0.1" min="0" max="100" class="mono"></label><label style="flex:1;margin-top:0">Sustained for (s)<input id="fth" type="number" min="10" max="3600" class="mono" oninput="fhv()"></label></div>
+<div class="help">Measured on an average, not a single reading, so a load that dips to 0W between cycles won't trip it. <span id="ftx"></span></div>
 <button class="btn p blk" style="margin-top:18px" onclick="saveSet()">Save settings</button></div></div></div>
 
 <div class="tab" id="cal"><div class="card"><div class="hd">Power calibration</div><div class="csub">The CSE7766 ships uncalibrated. Calibrate once against a known load.</div><div class="bd">
@@ -167,7 +174,8 @@ $('i').innerHTML=s.current.toFixed(2)+'<span>A</span>';$('e').innerHTML=s.energy
 $('rssi').textContent=s.rssi+' dBm';$('up').textContent=fmtUp(s.uptime);$('fw').textContent='FireLabs '+s.fw;
 $('fw2').textContent='FireLabs '+s.fw;$('fl').textContent=(s.flash/1048576|0)+' MB';$('heap').textContent=(s.heap/1024).toFixed(1)+' KB';$('mac').textContent=s.mac;
 $('calnow').textContent=s.power.toFixed(1)+' W · '+s.voltage.toFixed(1)+' V · '+s.current.toFixed(2)+' A';
-['stats','caltab','nlrow','live'].forEach(function(id){var el=$(id);if(el)el.style.display=s.meter?'':'none'});
+['stats','caltab','nlrow','live','ftcard'].forEach(function(id){var el=$(id);if(el)el.style.display=s.meter?'':'none'});
+$('flt').classList.toggle('on',!!s.fault);
 if(s.meter){histW.push(s.power);if(histW.length>30)histW.shift();histV.push(s.voltage);if(histV.length>30)histV.shift();
 $('lw').innerHTML=s.power.toFixed(1)+'<span style="color:var(--muted);font-size:12px"> W</span>';
 $('lv').innerHTML=s.voltage.toFixed(1)+'<span style="color:var(--muted);font-size:12px"> V</span>';
@@ -178,9 +186,11 @@ var ms=$('mst');ms.className='pill'+(s.mqtt?'':' off');ms.innerHTML='<span class
 function loadCfg(){fetch('/api/config').then(r=>r.json()).then(function(c){
 $('mh').value=c.mqtt_host||'';$('mp').value=c.mqtt_port||1883;$('md').value=c.disc_prefix||'homeassistant';$('mu').value=c.mqtt_user||'';
 $('dn').value=c.name||'';hp();rmode=c.restore_mode;$('rm').children[rmode].classList.add('on');
-$('nl').classList.toggle('on',c.noload);$('ib').value=c.brightness;$('bv').textContent=c.brightness+'%';$('cf').textContent=(c.cal_p||1).toFixed(3)})}
+$('nl').classList.toggle('on',c.noload);$('ib').value=c.brightness;$('bv').textContent=c.brightness+'%';$('cf').textContent=(c.cal_p||1).toFixed(3);
+$('fte').classList.toggle('on',c.fault_en!==false);$('ftw').value=(c.fault_w!==undefined?c.fault_w:0.5);$('fth').value=c.fault_hold||300;fhv()})}
+function fhv(){var s=+$('fth').value||0;$('ftx').textContent=s>=60?'= '+(s/60).toFixed(s%60?1:0)+' min':''}
 function saveMqtt(){var o={mqtt_host:$('mh').value,mqtt_port:+$('mp').value,disc_prefix:$('md').value,mqtt_user:$('mu').value};if($('mpw').value)o.mqtt_pass=$('mpw').value;post('/api/config',o).then(()=>toast('MQTT saved — reconnecting'))}
-function saveSet(){post('/api/config',{name:$('dn').value,restore_mode:rmode,noload:$('nl').classList.contains('on'),brightness:+$('ib').value}).then(()=>toast('Settings saved'))}
+function saveSet(){post('/api/config',{name:$('dn').value,restore_mode:rmode,noload:$('nl').classList.contains('on'),brightness:+$('ib').value,fault_en:$('fte').classList.contains('on'),fault_w:+$('ftw').value,fault_hold:+$('fth').value}).then(()=>toast('Settings saved'))}
 function calib(){var w=parseFloat($('cw').value);if(!w){toast('Enter the meter watts');return}post('/api/calibrate',{watts:w}).then(r=>r.json()).then(function(r){$('cf').textContent=(r.cal_p||1).toFixed(3);toast('Calibrated')})}
 status();loadCfg();setInterval(status,2000);
 </script></body></html>)=====";

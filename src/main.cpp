@@ -20,13 +20,15 @@ static NetworkManager net;
 static MqttManager mqtt;
 static WebUi web;
 
-static const float    kNoLoadWatts = 0.1f;
-static const uint32_t kNoLoadHold  = 12000;
-static const uint32_t kPublishMs   = 8000;
-static const uint32_t kDiagMs      = 60000;
+static const uint32_t kFaultTickMs  = 5000;   // window the fault mean is taken over
+static const uint32_t kFaultClearMs = 15000;  // sustained load before clearing a fault
+static const uint32_t kPublishMs    = 8000;
+static const uint32_t kDiagMs       = 60000;
 
-static uint32_t noLoadSince = 0;
-static bool     noLoadActive = false;
+static uint32_t faultBelowSince = 0;
+static uint32_t faultAboveSince = 0;
+static uint32_t lastFaultTick = 0;
+static bool     faultActive = false;
 static uint32_t lastPublish = 0;
 static uint32_t lastDiag = 0;
 static double   energyTodayKwh = 0;  // TODO: reset at local midnight via NTP time
@@ -103,7 +105,7 @@ void setup() {
   web.setEnergyProvider([]() { return (float)energyTodayKwh; });
   web.setMqttStatus([]() { return mqtt.connected(); });
   web.setMqttInfo([]() { return String("r") + mqtt.lastReason() + " t" + mqtt.attempts(); });
-  web.setFaultProvider([]() { return noLoadActive; });
+  web.setFaultProvider([]() { return faultActive; });
   web.setScanProvider([]() { return net.scanJson(); });
   web.setScanTrigger([]() { net.startScan(); });
   web.onApply(applySettings);
@@ -131,26 +133,54 @@ static void updateLedStatus() {
     case NetworkManager::Mode::SetupAp:    led.setStatus(Led::Status::SetupAp); break;
     case NetworkManager::Mode::Connecting: led.setStatus(Led::Status::Connecting); break;
     case NetworkManager::Mode::Online:
-      led.setStatus(noLoadActive && cfg.noLoadIndicator ? Led::Status::NoLoad : Led::Status::Off);
+      led.setStatus(faultActive && cfg.noLoadIndicator ? Led::Status::NoLoad : Led::Status::Off);
       break;
     default: led.setStatus(Led::Status::Off); break;
   }
 }
 
-static void updateNoLoad(uint32_t now) {
-  if (!meter.present()) {            // S31 Lite: no metering, no fault
-    if (noLoadActive) { noLoadActive = false; mqtt.publishFault(false); }
-    noLoadSince = 0;
+static void clearFault() {
+  if (faultActive) { faultActive = false; mqtt.publishFault(false); }
+  faultBelowSince = 0;
+  faultAboveSince = 0;
+}
+
+// Fault = the relay is on but nothing is actually drawing power.
+//
+// This runs on the mean of a window of samples rather than the latest frame.
+// A load that is switched on but idle (a humidifier out of water, say) still
+// emits occasional watt-level frames from its control board, and a load that is
+// working normally may duty-cycle down to a true 0W for seconds at a time. Only
+// the average separates the two; either instantaneous reading on its own is
+// ambiguous. The dwell is deliberately asymmetric: slow to fault so a duty
+// cycle can't trip it, quicker to clear so a load coming back is seen promptly.
+static void updateFault(uint32_t now) {
+  if (!meter.present() || !cfg.faultEnabled) {  // S31 Lite, or switched off
+    clearFault();
     return;
   }
-  bool cond = relay.isOn() && meter.power() <= kNoLoadWatts;
-  if (cond) {
-    if (noLoadSince == 0) noLoadSince = now;
-    bool active = (now - noLoadSince) >= kNoLoadHold;
-    if (active != noLoadActive) { noLoadActive = active; mqtt.publishFault(active); }
+  if (now - lastFaultTick < kFaultTickMs) return;
+  lastFaultTick = now;
+
+  float p;
+  if (!meter.faultAverage(p)) return;  // no frames this window; nothing to judge
+
+  if (relay.isOn() && p <= cfg.faultWatts) {
+    faultAboveSince = 0;
+    if (faultBelowSince == 0) faultBelowSince = now;
+    if (!faultActive && now - faultBelowSince >= (uint32_t)cfg.faultHoldSec * 1000UL) {
+      faultActive = true;
+      mqtt.publishFault(true);
+    }
+  } else if (!relay.isOn()) {
+    clearFault();                      // relay off is not a fault
   } else {
-    noLoadSince = 0;
-    if (noLoadActive) { noLoadActive = false; mqtt.publishFault(false); }
+    faultBelowSince = 0;
+    if (faultAboveSince == 0) faultAboveSince = now;
+    if (faultActive && now - faultAboveSince >= kFaultClearMs) {
+      faultActive = false;
+      mqtt.publishFault(false);
+    }
   }
 }
 
@@ -177,7 +207,7 @@ void loop() {
     mqtt.reannounce();
   }
 
-  updateNoLoad(now);
+  updateFault(now);
   updateLedStatus();
   led.update(now);
 
