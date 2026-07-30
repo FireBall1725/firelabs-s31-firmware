@@ -94,7 +94,7 @@ ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--mute
 <div class="row" style="margin-top:14px"><span class="pill" id="mst" style="margin:0"><span class="dot"></span>…</span><div class="grow"></div><div class="val" id="mtb"></div></div></div></div></div>
 
 <div class="tab" id="set"><div class="card"><div class="hd">Identity</div><div class="bd">
-<label>Device name<input id="dn" oninput="hp()"></label><div class="help">Network name: <span class="host" id="hpv">fl-</span> — the fl- prefix keeps it clear of other devices.</div></div></div>
+<label>Device name<input id="dn" oninput="hp()"></label><div class="help">Network name: <span class="host" id="hpv">fl-</span>. The fl- prefix keeps it clear of other devices.</div></div></div>
 <div class="card"><div class="hd">Behavior</div><div class="bd">
 <label style="margin-bottom:8px">Relay state after power loss</label>
 <div class="seg" id="rm"><button onclick="seg(this,0)">Off</button><button onclick="seg(this,1)">On</button><button onclick="seg(this,2)">Last state</button></div>
@@ -104,8 +104,8 @@ ol{margin:0;padding-left:18px;font-size:13.5px;line-height:1.55;color:var(--mute
 <button class="btn p blk" style="margin-top:18px" onclick="saveSet()">Save settings</button></div></div>
 <div class="card" id="ftcard"><div class="hd">Fault detection</div><div class="csub">Flags a load that has stopped drawing power while switched on: a humidifier out of water, an appliance that tripped.</div><div class="bd">
 <div class="row" style="padding-top:0"><div class="grow"><div class="k">Enabled</div><div class="s">Reports the fault here and to Home Assistant</div></div><div class="mini" id="fte" onclick="this.classList.toggle('on')"></div></div>
-<div style="display:flex;gap:12px;margin-top:14px"><label style="flex:1;margin-top:0">Trip below (W)<input id="ftw" type="number" step="0.1" min="0" max="100" class="mono"></label><label style="flex:1;margin-top:0">Sustained for (s)<input id="fth" type="number" min="10" max="3600" class="mono" oninput="fhv()"></label></div>
-<div class="help">Measured on an average, not a single reading, so a load that dips to 0W between cycles won't trip it. <span id="ftx"></span></div>
+<div style="display:flex;gap:12px;margin-top:14px"><label style="flex:1;margin-top:0">Trip below (W)<input id="ftw" type="number" step="0.1" min="0" max="100" class="mono"></label><label style="flex:1;margin-top:0">Sustained for (s) <span id="ftx" style="font-weight:500;color:var(--red)"></span><input id="fth" type="number" min="10" max="3600" class="mono" oninput="fhv()"></label></div>
+<div class="help">Measured on an average, not a single reading, so a load that dips to 0W between cycles won't trip it.</div>
 <button class="btn p blk" style="margin-top:18px" onclick="saveSet()">Save settings</button></div></div></div>
 
 <div class="tab" id="cal"><div class="card"><div class="hd">Power calibration</div><div class="csub">The CSE7766 ships uncalibrated. Calibrate once against a known load.</div><div class="bd">
