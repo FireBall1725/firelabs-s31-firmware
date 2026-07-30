@@ -132,6 +132,9 @@ void WebUi::routesOnline() {
     d["restore_mode"] = (uint8_t)cfg_->restoreMode;
     d["noload"]       = cfg_->noLoadIndicator;
     d["brightness"]   = cfg_->indicatorPercent;
+    d["fault_en"]     = cfg_->faultEnabled;
+    d["fault_w"]      = cfg_->faultWatts;
+    d["fault_hold"]   = cfg_->faultHoldSec;
     d["cal_p"]        = cfg_->calPower;
     String out; serializeJson(d, out);
     req->send(200, "application/json", out);
@@ -147,6 +150,13 @@ void WebUi::routesOnline() {
     if (d["restore_mode"].is<int>())        cfg_->restoreMode = (Config::RestoreMode)(uint8_t)d["restore_mode"];
     if (d["noload"].is<bool>())             cfg_->noLoadIndicator = d["noload"];
     if (d["brightness"].is<int>())          cfg_->indicatorPercent = d["brightness"];
+    if (d["fault_en"].is<bool>())           cfg_->faultEnabled = d["fault_en"];
+    // is<float>() accepts ints too; is<int>() would reject 0.5 and silently drop
+    // every fractional threshold.
+    if (d["fault_w"].is<float>())
+      cfg_->faultWatts = constrain((float)d["fault_w"], 0.0f, 100.0f);
+    if (d["fault_hold"].is<int>())
+      cfg_->faultHoldSec = (uint16_t)constrain((long)d["fault_hold"], 10L, 3600L);
     cfg_->save();
     if (onApply_) onApply_();
     req->send(200, "application/json", "{\"ok\":true}");

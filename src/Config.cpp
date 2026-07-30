@@ -70,6 +70,9 @@ bool Config::load() {
   relayLastState   = doc["relay_last"]  | false;
   noLoadIndicator  = doc["noload_ind"]  | false;
   indicatorPercent = doc["ind_pct"]     | 30;
+  faultEnabled     = doc["flt_en"]      | true;
+  faultWatts       = doc["flt_w"]       | 0.5f;
+  faultHoldSec     = doc["flt_hold"]    | 300;
   calVoltage       = doc["cal_v"]       | 1.0f;
   calCurrent       = doc["cal_i"]       | 1.0f;
   calPower         = doc["cal_p"]       | 1.0f;
@@ -91,6 +94,9 @@ bool Config::save() const {
   doc["relay_last"]   = relayLastState;
   doc["noload_ind"]   = noLoadIndicator;
   doc["ind_pct"]      = indicatorPercent;
+  doc["flt_en"]       = faultEnabled;
+  doc["flt_w"]        = faultWatts;
+  doc["flt_hold"]     = faultHoldSec;
   doc["cal_v"]        = calVoltage;
   doc["cal_i"]        = calCurrent;
   doc["cal_p"]        = calPower;

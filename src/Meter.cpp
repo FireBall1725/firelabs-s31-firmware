@@ -94,6 +94,9 @@ void Meter::parseFrame(const uint8_t* f) {
   sumI_ += current_;
   sumP_ += power_;
   count_++;
+
+  faultSumP_ += power_;
+  faultCount_++;
 }
 
 bool Meter::sampleAverage(float& v, float& i, float& p) {
@@ -103,5 +106,13 @@ bool Meter::sampleAverage(float& v, float& i, float& p) {
   p = (float)(sumP_ / count_);
   sumV_ = sumI_ = sumP_ = 0;
   count_ = 0;
+  return true;
+}
+
+bool Meter::faultAverage(float& p) {
+  if (faultCount_ == 0) return false;
+  p = (float)(faultSumP_ / faultCount_);
+  faultSumP_ = 0;
+  faultCount_ = 0;
   return true;
 }
