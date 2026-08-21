@@ -51,6 +51,12 @@ The same `firmware.bin` works on every plug; identity comes from the MAC at runt
 
 With no saved wifi, the plug starts an open AP named `FireLabs S31 <mac-suffix>`. Connect to it, and a captive portal walks through picking your network and naming the plug.
 
+## Support
+
+Questions, updates, and works in progress: [FireBall Codes on Discord](https://discord.gg/QpV82CFfVD).
+
+If this saved you some time, you can [buy me a sushi roll](https://ko-fi.com/fireball1725).
+
 ## License
 
 [GNU AGPL-3.0](LICENSE).
