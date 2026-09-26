@@ -238,7 +238,7 @@ ballpark before calibration.
 
 ## Companion Home Assistant integration
 
-Built and published at [FireLabsCA/firelabs-hass](https://github.com/FireLabsCA/firelabs-hass):
+Built and published at [FireBall1725/firelabs-hass](https://github.com/FireBall1725/firelabs-hass):
 a local-polling HACS integration that drives HA entities over the device HTTP API,
 for setups that don't run MQTT. It also provides zeroconf auto-discovery via the
 `_firelabs._tcp` mDNS service the firmware advertises. Use MQTT Discovery or the

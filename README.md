@@ -2,9 +2,9 @@
 
 Custom firmware for the Sonoff S31 smart plug (ESP8266, 4MB). It replaces whatever firmware is on the plug (stock Sonoff, or ESPHome if you flashed that yourself) with an MQTT-native firmware that talks to Home Assistant through MQTT Discovery, plus a local HTTP API and a web UI for setup and configuration. It also works on the S31 Lite (no power-metering chip), detecting the missing CSE7766 at runtime and hiding the power features.
 
-A companion Home Assistant integration (no MQTT required) lives at [FireLabsCA/firelabs-hass](https://github.com/FireLabsCA/firelabs-hass). Once you've flashed a plug, install that integration and add it:
+A companion Home Assistant integration (no MQTT required) lives at [FireBall1725/firelabs-hass](https://github.com/FireBall1725/firelabs-hass). Once you've flashed a plug, install that integration and add it:
 
-[![Open your Home Assistant instance and open the FireLabs repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=FireLabsCA&repository=firelabs-hass&category=integration)
+[![Open your Home Assistant instance and open the FireLabs repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=FireBall1725&repository=firelabs-hass&category=integration)
 [![Open your Home Assistant instance and start setting up FireLabs.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=firelabs)
 
 ## Features
